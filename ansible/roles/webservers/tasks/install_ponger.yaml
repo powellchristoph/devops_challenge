@@ -1,0 +1,23 @@
+---
+- name: Create app user
+  user: name={{ app_user }} comment="Ponger service" createhome=no system=yes
+
+- name: Check for previous installation
+  stat: path="{{ app_path }}"
+  register: st
+
+- name: Ensure clean environment
+  file: path='{{ app_path }}' state=absent
+  when: st.stat.isdir is defined and st.stat.isdir
+
+- name: Install gunicorn into virutalenv
+  pip: name='gunicorn' virtualenv='{{ app_path }}'
+  notify: restart ponger
+
+- name: Install app into virtualenv
+  pip: name='git+https://github.com/powellchristoph/ponger.git#egg=ponger' virtualenv='{{ app_path }}'
+  notify: restart ponger
+
+- name: Copy upstart script for app
+  template: src=ponger.upstart.j2 dest=/etc/init/ponger.conf
+  notify: restart ponger

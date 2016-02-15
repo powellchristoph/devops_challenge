@@ -1,0 +1,7 @@
+---
+# Default vars for webservers running ponger
+
+app_user: ponger
+app_port: 8000
+app_path: /srv/ponger
+gunicorn_workers: "{{ ansible_processor_cores|int * 2 }}"

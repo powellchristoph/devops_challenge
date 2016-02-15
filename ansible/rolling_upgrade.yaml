@@ -1,0 +1,89 @@
+---
+- name: 
+  hosts: localhost
+  user: root
+  connection: local
+  gather_facts: False
+
+  vars_files:
+    - vars.yaml
+
+  tasks:
+    - name: discover load balancer details
+      local_action:
+        module: rax_clb
+        credentials: "{{ credentials }}"
+        name: "{{ prefix }}-{{ region|lower }}"
+        port: 80
+        region: "{{ region }}"
+        protocol: HTTP
+        type: PUBLIC
+        algorithm: ROUND_ROBIN
+        state: present
+        wait: true
+      register: lb
+
+    - name: pre-flight lb health check
+      fail: msg="Load balancer not healthy, aborting deployment!"
+      when: lb.balancer.status != 'ACTIVE'
+
+    - name: pre-flight node health check
+      fail: msg="Node {{ item.id }} is not healthy, aborting deployment!"
+      when: item.condition != 'ENABLED'
+      with_items: lb.balancer.nodes
+
+    - name: create node host group
+      add_host: name={{ item.id }}
+                ansible_host={{ item.address }}
+                ansible_user=root
+                lb_id={{ lb.balancer.id }}
+                groups=lb_nodes
+      with_items: lb.balancer.nodes
+
+- name: Rolling deploy
+  hosts: lb_nodes
+  gather_facts: True
+  connection: ssh
+  any_errors_fatal: yes
+  serial: 1
+
+  vars_files:
+    - vars.yaml
+
+  pre_tasks:
+    - name: set node to draining
+      rax_clb_nodes: load_balancer_id={{ lb_id }}
+                     node_id={{ inventory_hostname }}
+                     condition=draining wait=true
+                     credentials={{ credentials }}
+                     region={{ region }}
+      delegate_to: localhost
+
+    # TODO: Possibly replace with uri module
+    - name: wait for active connections to clear
+      shell: "curl -s http://localhost/nginx_status | grep 'Active' | cut -d':' -f2 | tr -d ' '" 
+      register: result
+      until: result.stdout == "1"
+      retries: 20
+      delay: 2
+
+    - name: set node to disabled
+      rax_clb_nodes: load_balancer_id={{ lb_id }}
+                     node_id={{ inventory_hostname }}
+                     condition=disabled wait=true
+                     credentials={{ credentials }}
+                     region={{ region }}
+      delegate_to: localhost
+
+  roles:
+    - webservers
+
+  post_tasks:
+    - name: set node to enabled
+      rax_clb_nodes: load_balancer_id={{ lb_id }}
+                     node_id={{ inventory_hostname }}
+                     condition=enabled wait=true
+                     credentials={{ credentials }}
+                     region={{ region }}
+      delegate_to: localhost
+

@@ -1,0 +1,84 @@
+---
+- name: Build application environment
+  hosts: localhost
+  user: root
+  connection: local
+  gather_facts: False
+
+  vars_files:
+    - vars.yaml
+
+  vars:
+    - files:
+        /root/.ssh/authorized_keys: /root/.ssh/id_rsa.pub
+
+  tasks:
+    - name: Create cloud load balancer
+      local_action:
+        module: rax_clb
+        credentials: "{{ credentials }}"
+        name: "{{ prefix }}-{{ region|lower }}"
+        port: 80
+        protocol: HTTP
+        algorithm: ROUND_ROBIN
+        type: PUBLIC
+        timeout: 30
+        region: "{{ region }}"
+        wait: yes
+        state: present
+        #meta:
+        #  app: my-cool-app
+      register: clb
+
+
+    - name: Create cloud server
+      local_action:
+        module: rax
+        credentials: "{{ credentials }}"
+        name: "{{ prefix }}-{{ region|lower }}-%02d"
+        flavor: "{{ flavor }}"
+        image: "{{ image }}"
+        region: "{{ region }}"
+        files: "{{ files }}"
+        wait: yes
+        state: present
+        count: "{{ count }}"
+        exact_count: yes
+        networks:
+          - private
+          - public
+        group: web
+      register: rax
+
+    - name: Add new cloud server to host group
+      local_action:
+        module: add_host
+        hostname: "{{ item.name }}"
+        ansible_host: "{{ item.rax_accessipv4 }}"
+        #ansible_ssh_pass: "{{ item.rax_adminpass }}"
+        ansible_user: root
+        groupname: web
+      with_items: rax.success
+      when: rax.action == 'create'
+
+    - name: Add servers to Load balancer
+      local_action:
+        module: rax_clb_nodes
+        credentials: "{{ credentials }}"
+        load_balancer_id: "{{ clb.balancer.id }}"
+        address: "{{ item.rax_networks.private|first }}"
+        port: 80
+        condition: enabled
+        type: primary
+        wait: yes
+        region: "{{ region }}"
+      with_items: rax.success
+      when: rax.action == 'create'
+
+- name: Configure application servers
+  hosts: web
+  user: root
+  gather_facts: True
+  roles:
+    - base
+    - webservers

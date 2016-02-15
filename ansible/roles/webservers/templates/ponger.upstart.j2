@@ -1,0 +1,12 @@
+description "Gunicorn application server running ponger"
+
+start on runlevel [2345]
+stop on runlevel [!2345]
+
+respawn
+setuid {{ app_user }}
+setgid www-data
+
+env PATH={{ app_path }}/bin
+chdir {{ app_path }}
+exec gunicorn -w {{ gunicorn_workers }} --bind 127.0.0.1:{{ app_port }} ponger:app

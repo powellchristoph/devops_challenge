@@ -1,0 +1,15 @@
+---
+- name: Test command
+  hosts: web-iad-01
+  gather_facts: False
+
+  tasks:
+    - name: check active connections
+      shell: "curl -s http://localhost/nginx_status | grep 'Active' | cut -d':' -f2 | tr -d ' '" 
+      register: result
+      until: result.stdout == "1"
+      retries: 20
+      delay: 2
+
+    #- name: debug connections
+    #  debug: var=result

@@ -1,0 +1,33 @@
+---
+- name: Teardown application environment
+  hosts: localhost
+  user: root
+  connection: local
+  gather_facts: False
+
+  vars_files:
+    - vars.yaml
+
+  tasks:
+    - name: Destroy cloud load balancer
+      local_action:
+        module: rax_clb
+        credentials: "{{ credentials }}"
+        name: "{{ prefix }}-{{ region|lower }}"
+        wait: no
+        state: absent
+        region: "{{ region }}"
+
+    - name: Server delete requests
+      local_action:
+        module: rax
+        credentials: "{{ credentials }}"
+        name: "{{ prefix }}-{{ region|lower }}-%02d"
+        flavor: "{{ flavor }}"
+        image: "{{ image }}"
+        region: "{{ region }}"
+        state: absent
+        count: "{{ count }}"
+        exact_count: yes
+        group: web
+        wait: yes

@@ -1,0 +1,7 @@
+prefix: web
+flavor: general1-2
+# note: this image UUID is for Ubuntu 14.04 PVHVM
+image: 09de0a66-3156-48b4-90a5-1cf25a905207
+region: IAD
+credentials: /root/.rackspace_cloud_credentials
+count: 3

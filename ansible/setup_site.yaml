@@ -82,3 +82,10 @@
   roles:
     - base
     - webservers
+
+- name: Print information
+  hosts: localhost
+  gather_facts: False
+
+  tasks:
+    - debug: msg="Site available at http://{{ clb.balancer.virtual_ips[0].address }}"

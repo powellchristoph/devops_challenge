@@ -1,0 +1,12 @@
+---
+- name: Copy app nginx config
+  copy: src=jenkins.nginx.conf
+        dest=/etc/nginx/sites-available/jenkins
+        mode=0644 owner=root group=root
+  notify: reload nginx
+
+- name: Activate app
+  file: src=/etc/nginx/sites-available/jenkins
+        dest=/etc/nginx/sites-enabled/jenkins
+        state=link
+  notify: reload nginx

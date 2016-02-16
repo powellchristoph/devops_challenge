@@ -1,0 +1,30 @@
+---
+- name: Add Jenkins apt key
+  apt_key: url='https://jenkins-ci.org/debian/jenkins-ci.org.key' state=present
+
+- name: Add Jenkins apt repo
+  apt_repository: repo='deb http://pkg.jenkins-ci.org/debian binary/' state=present
+
+# Install Java first. It appears the Jenkins deps are borked on Ubuntu.
+# It attempts to start Jenkins before Java is installed, which fails.
+- name: Install Java
+  apt: pkg=openjdk-7-jre-headless update_cache=yes cache_valid_time=86400
+
+- name: Install Jenkins
+  apt: pkg=jenkins state=installed update_cache=yes cache_valid_time=86400
+
+- name: Stop Jenkins on install
+  service: name=jenkins state=stopped
+
+- name: Jenkins defaults file
+  template: src=jenkins.defaults.j2
+            dest=/etc/default/jenkins
+            mode=0644 owner=root group=root
+
+- name: Copy starter config.xml
+  copy: src=config.xml
+        dest=/var/lib/jenkins/config.xml 
+        force=no
+
+- name: Immediately restart Jenkins on init config changes.
+  service: name=jenkins state=restarted

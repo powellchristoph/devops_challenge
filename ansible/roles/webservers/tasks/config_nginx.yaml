@@ -1,16 +1,4 @@
 ---
-- name: Install nginx
-  apt: pkg=nginx state=latest update_cache=yes cache_valid_time=86400
-  notify: restart nginx
-
-- name: Remove default site
-  file: path=/etc/nginx/sites-enabled/default
-        state=absent
-  notify: reload nginx
-
-- name: Ensure nginx running/starts on boot
-  service: name=nginx state=started enabled=yes
-
 - name: Copy app nginx config
   template: src=ponger.nginx.cfg.j2
             dest=/etc/nginx/sites-available/ponger

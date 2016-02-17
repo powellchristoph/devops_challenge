@@ -30,9 +30,9 @@ The entire infrastructure can be provisioned or tore-down using these Ansible Pl
 Rolling upgrades are executed with the [ansible/rolling_upgrade.yaml](ansible/rolling_upgrade.yaml) playbook.
 
 The rolling_upgrade process:
-1. Get load-balancer and node information.
-2. Validate the nods and LB are in a healthy status or abort.
-3. For each node:
+* Get load-balancer and node information.
+* Validate the nods and LB are in a healthy status or abort.
+* For each node:
     * Set the node condition to 'draining'.
     * Poll nginx's status page until there are no active connections.
     * Set the node condition to 'disabled'.

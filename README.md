@@ -45,3 +45,16 @@ If starting from scratch, you can bootstrap the entire environment using the [bo
 root@host:~# bash bootstrap.sh
 usage: bootstrap.sh -u rax_username -k rax_apikey [deploy | destroy]
 ```
+At the end of the Ansible run, it will print out the URL of the loadbalancer.
+```
+TASK [debug] *******************************************************************
+ok: [localhost] => {
+    "msg": "Site available at http://146.20.48.247"
+}
+
+PLAY RECAP *********************************************************************
+localhost                  : ok=3    changed=0    unreachable=0    failed=0
+web-iad-01                 : ok=17   changed=4    unreachable=0    failed=0
+web-iad-02                 : ok=17   changed=4    unreachable=0    failed=0
+web-iad-03                 : ok=17   changed=4    unreachable=0    failed=0
+```

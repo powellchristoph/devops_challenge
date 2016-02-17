@@ -1,5 +1,0 @@
----
-- name: Install Jenkins Job Builder
-  pip: name='jenkins-job-builder' virtualenv=/etc/jenkins-job-builder
-
-#- name: 
